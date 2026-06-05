@@ -29,16 +29,15 @@ public class Elevator : MonoBehaviour
 
     [Header("Runtime")]
     private Floor currentFloor;
-
     private int currentFloorIndex = 0;
     private int targetFloorIndex = 0;
-
     private int topFloorIndex;
     private int bottomFloor;
-
     private EElevatorMoveStatus movementStatus;
     private bool canMove = true;
 
+    [Header("Invoke check")]
+    private Floor arrivalLatestInvokedFloor;
 
     [Header("Events")]
     public static Action<Floor> OnElevatorArrived;
@@ -128,8 +127,13 @@ public class Elevator : MonoBehaviour
         else
         {
             Floor floorGotInto = FloorManager.Instance.GetFloorByStoreyAndSide(targetFloorIndex, EFloorSide.LEFT);
-            OnElevatorArrived?.Invoke(floorGotInto);
-            Debug.Log("ELEVATOR INVOKED ARRIVAL AT " +  floorGotInto.FloorNumber);
+            if (arrivalLatestInvokedFloor != floorGotInto)
+            {
+                OnElevatorArrived?.Invoke(floorGotInto);
+                Debug.Log("ELEVATOR INVOKED ARRIVAL AT " +  floorGotInto.FloorNumber);
+                arrivalLatestInvokedFloor = floorGotInto;
+            }
+            
             movementStatus = EElevatorMoveStatus.ON_FLOOR;
         }
     }

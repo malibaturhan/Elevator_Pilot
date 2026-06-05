@@ -38,6 +38,7 @@ public class FloorManager : Singleton<FloorManager>
 
     public Floor GetFloorByStoreyAndSide(int floorIndex, EFloorSide side)
     {
+        // Debug.Log("returning floor index " + floorIndex);
         return floors[floorIndex];
     }
     

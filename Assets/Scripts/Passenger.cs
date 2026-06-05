@@ -78,10 +78,15 @@ public class Passenger : MonoBehaviour
     private void ElevatorArrivedOnFloorCallback(Floor floor)
     {
         int floorNumber = floor.FloorNumber;
+        Debug.Log($"I AM {gameObject.name}, I INFORMED THAT ELEVATOR IS AT {floorNumber}");
         if (floorNumber == targetFloorNumber && currentState == EPassengerMoveState.RIDING_ELEVATOR)
         {
-            currentState = EPassengerMoveState.EXITING_ELEVATOR;
+            currentFloor = floor;
+            currentFloorIndex = floor.FloorNumber;
+
             transform.SetParent(currentFloor.transform);
+
+            currentState = EPassengerMoveState.EXITING_ELEVATOR;
             elevator.ReleasePassenger(this);
         }
     }
