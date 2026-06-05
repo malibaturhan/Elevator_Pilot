@@ -75,20 +75,21 @@ public class Floor : MonoBehaviour
     }
 
     public Transform GetEntranceDoor() => entranceDoor.transform;
+    public Transform GetElevatorDoor() => elevatorDoor.transform;
 
     public int FloorNumber => floorNumber;
     public Transform FloorsElevatorDoor => elevatorDoor.transform;
 
 
-    public void GetPassenger()
+    public Passenger GetPassenger()
     {
         if (PassengerQueue.Count == 0)
         {
             Debug.Log("NO PASSENGER FOUND ON FLOOR " + floorNumber);
-            return;
+            return null;
         }
         Passenger passengerToRideElevator =  PassengerQueue.Dequeue();
-        passengerToRideElevator.GetInsideElevator();
+        return passengerToRideElevator;
     }
 
     public Vector2 GetQueuePosition()

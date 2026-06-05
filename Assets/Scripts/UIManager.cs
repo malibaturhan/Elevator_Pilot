@@ -26,12 +26,12 @@ public class UIManager : MonoBehaviour
         Elevator.OnTargetFloorChanged -= BufferChangedCallback;
     }
 
-    private void ElevatorArrivedCallback(int val)
+    private void ElevatorArrivedCallback(Floor floor)
     {
        
     }
 
-    private void BufferChangedCallback(int val)
+    private void BufferChangedCallback(Floor floor)
     {
 
     }

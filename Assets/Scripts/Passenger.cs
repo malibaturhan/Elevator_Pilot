@@ -75,11 +75,14 @@ public class Passenger : MonoBehaviour
         //no op
     }
 
-    private void ElevatorArrivedOnFloorCallback(int floorNumber)
+    private void ElevatorArrivedOnFloorCallback(Floor floor)
     {
+        int floorNumber = floor.FloorNumber;
         if (floorNumber == targetFloorNumber && currentState == EPassengerMoveState.RIDING_ELEVATOR)
         {
-            Debug.Log("EXIT ELEVATOR - IMPLEMENT ACTION");
+            currentState = EPassengerMoveState.EXITING_ELEVATOR;
+            transform.SetParent(currentFloor.transform);
+            elevator.ReleasePassenger(this);
         }
     }
 
@@ -140,12 +143,29 @@ public class Passenger : MonoBehaviour
 
             case EPassengerMoveState.RIDING_ELEVATOR:
                 transform.SetParent(elevator.transform);
+                OnPassengerEnteredElevator?.Invoke(this);
                 break;            
             case EPassengerMoveState.EXITING_ELEVATOR:
-                // releasing elevator so it can go
+                target = currentFloor.GetElevatorDoor().position;
+                if (target != Vector2.zero)
+                {
+                    MoveTowards(target);
+                }
+                if (Vector2.Distance(target, transform.position) <= arriveDistance)
+                {
+                    currentState = EPassengerMoveState.WALKING_TO_EXIT;
+                    OnPassengerExitElevator?.Invoke(this);
+                }
                 break;
 
             case EPassengerMoveState.WALKING_TO_EXIT:
+                target = currentFloor.GetEntranceDoor().position;
+                MoveTowards(target);
+                if (Vector2.Distance(target, transform.position) <= arriveDistance)
+                {
+                    Debug.Log("************passenger arrived successfully");
+                    Destroy(gameObject);
+                }
                 break;
         }
     }
@@ -180,13 +200,13 @@ public class Passenger : MonoBehaviour
     }
 
 
-    public void GetInsideElevator()
+    public void GetInsideElevator(Transform elevatorSpot)
     {
         if (currentState != EPassengerMoveState.WAITING_IN_QUEUE)
             return;
 
         Debug.Log($"{gameObject.name}: going elevator");
-        target = elevator.transform.position;
+        target = elevatorSpot.position;
         currentState = EPassengerMoveState.WALKING_TO_ELEVATOR;
     }
 }
