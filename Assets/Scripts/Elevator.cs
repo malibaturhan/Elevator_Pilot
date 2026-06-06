@@ -12,12 +12,12 @@ public enum EElevatorMoveStatus
 public class Elevator : MonoBehaviour
 {
     [Header("Passenger Transport Settings")]
-    [SerializeField] private List<Transform> elevatorPoints = new List<Transform>();
+    [SerializeField] private List<Transform> elevatorSlots = new List<Transform>();
 
     private List<Passenger> PassengersInsideElevator = new List<Passenger>();
     private List<Passenger> PassengersGettingInside = new List<Passenger>();
     private List<Passenger> PassengersGoingFloor = new List<Passenger>();
-    private int maxPassengers;
+    [SerializeField] private int maxPassengers;
 
     [Header("Movement Settings")]
     [SerializeField] private float movementSpeed = 1.0f;
@@ -31,6 +31,7 @@ public class Elevator : MonoBehaviour
     private Floor currentFloor;
     private int currentFloorIndex = 0;
     private int targetFloorIndex = 0;
+    private int passengersInsideElevatorCount = 0;
     private int topFloorIndex;
     private int bottomFloor;
     private EElevatorMoveStatus movementStatus;
@@ -54,7 +55,8 @@ public class Elevator : MonoBehaviour
 
     void Start()
     {
-        maxPassengers = elevatorPoints.Count;
+        maxPassengers = elevatorSlots.Count;
+        PassengersInsideElevator = new List<Passenger>(maxPassengers);
         SetMinMaxFloor();
         movementStatus = EElevatorMoveStatus.ON_FLOOR;
         col = gameObject.GetComponent<BoxCollider2D>();
@@ -78,8 +80,11 @@ public class Elevator : MonoBehaviour
         if (PassengersGettingInside.Contains(passengerRiding))
         {
             PassengersGettingInside.Remove(passengerRiding);
+            PassengersInsideElevator.Add(passengerRiding);
+            passengersInsideElevatorCount++;
         }
         ReconsiderCanMove();
+        
     }
 
     private void PassengerGettingOffElevatorCallback(Passenger passengerGettingOff)
@@ -87,9 +92,13 @@ public class Elevator : MonoBehaviour
         if (PassengersGoingFloor.Contains(passengerGettingOff))
         {
             PassengersGoingFloor.Remove(passengerGettingOff);
+            PassengersInsideElevator.Remove(passengerGettingOff);
+            passengersInsideElevatorCount--;
+            Debug.Log("passenger inside elevator reduced to " + passengersInsideElevatorCount);
         }
 
         ReconsiderCanMove();
+       
     }
 
     private void ReconsiderCanMove()
@@ -130,7 +139,7 @@ public class Elevator : MonoBehaviour
             if (arrivalLatestInvokedFloor != floorGotInto)
             {
                 OnElevatorArrived?.Invoke(floorGotInto);
-                Debug.Log("ELEVATOR INVOKED ARRIVAL AT " +  floorGotInto.FloorNumber);
+                // Debug.Log("ELEVATOR INVOKED ARRIVAL AT " +  floorGotInto.FloorNumber);
                 arrivalLatestInvokedFloor = floorGotInto;
             }
             
@@ -157,6 +166,7 @@ public class Elevator : MonoBehaviour
     // UI Button controls
     public void RequestPassengerFromFloor()
     {
+        Debug.Log("psgr inside : "+PassengersInsideElevator.Count +" max psgr: " +maxPassengers);
         if (PassengersInsideElevator.Count == maxPassengers)
         {
             Debug.Log("Elevator is full");
@@ -174,7 +184,8 @@ public class Elevator : MonoBehaviour
         if (passengerToGetInside != null)
         {
             canMove = false;
-            passengerToGetInside.GetInsideElevator(elevatorPoints[PassengersInsideElevator.Count]);
+            Debug.Log("passengers inside elevator count: " +passengersInsideElevatorCount);
+            passengerToGetInside.GetInsideElevator(elevatorSlots[passengersInsideElevatorCount]);
             PassengersGettingInside.Add(passengerToGetInside);
         }
     }
@@ -210,9 +221,11 @@ public class Elevator : MonoBehaviour
     {
         currentFloorText.text = $"Current: {currentFloorIndex}";
     }
+    
 
-    public void ReleasePassenger(Passenger passenger)
+    public void PassengerGettingOut(Passenger passenger)
     {
-        
+        Debug.Log("getting out: " + passenger.gameObject.name);
+        PassengersGoingFloor.Add(passenger);
     }
 }

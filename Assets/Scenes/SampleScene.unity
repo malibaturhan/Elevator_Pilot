@@ -321,6 +321,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3257574706072336666, guid: ac2a94c9b7caa0d48874e0759b694dfc, type: 3}
   m_PrefabInstance: {fileID: 73428868}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &212877709 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3131508536467033426, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+  m_PrefabInstance: {fileID: 3258252818467934488}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &271881884
 GameObject:
   m_ObjectHideFlags: 0
@@ -1179,6 +1184,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &773880403 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1883287107635146030, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+  m_PrefabInstance: {fileID: 3258252818467934488}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &812984830
 GameObject:
   m_ObjectHideFlags: 0
@@ -1209,11 +1219,11 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 6553491728887208208}
-  - {fileID: 1117057587}
-  - {fileID: 630315310}
-  - {fileID: 73428869}
   - {fileID: 1428087318}
+  - {fileID: 73428869}
+  - {fileID: 630315310}
+  - {fileID: 1117057587}
+  - {fileID: 6553491728887208208}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &812984832
@@ -1612,6 +1622,16 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1322475116}
   m_CullTransparentMesh: 1
+--- !u!4 &1385311616 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2001948532798485000, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+  m_PrefabInstance: {fileID: 3258252818467934488}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1385391871 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2496969603189616472, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+  m_PrefabInstance: {fileID: 3258252818467934488}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1428087317
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2002,6 +2022,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3518240015819867292, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+      propertyPath: maxPassengers
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3518240015819867292, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
       propertyPath: movementSpeed
       value: 3
       objectReference: {fileID: 0}
@@ -2009,6 +2033,26 @@ PrefabInstance:
       propertyPath: currentFloorText
       value: 
       objectReference: {fileID: 904943861}
+    - target: {fileID: 3518240015819867292, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+      propertyPath: elevatorSlots.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3518240015819867292, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+      propertyPath: 'elevatorSlots.Array.data[0]'
+      value: 
+      objectReference: {fileID: 212877709}
+    - target: {fileID: 3518240015819867292, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+      propertyPath: 'elevatorSlots.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1385311616}
+    - target: {fileID: 3518240015819867292, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+      propertyPath: 'elevatorSlots.Array.data[2]'
+      value: 
+      objectReference: {fileID: 773880403}
+    - target: {fileID: 3518240015819867292, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
+      propertyPath: 'elevatorSlots.Array.data[3]'
+      value: 
+      objectReference: {fileID: 1385391871}
     - target: {fileID: 8585485849892453991, guid: d5d5d6c41bba6bd4c8c4cd2e31556a42, type: 3}
       propertyPath: m_Name
       value: Elevator

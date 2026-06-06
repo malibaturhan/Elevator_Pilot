@@ -78,7 +78,6 @@ public class Passenger : MonoBehaviour
     private void ElevatorArrivedOnFloorCallback(Floor floor)
     {
         int floorNumber = floor.FloorNumber;
-        Debug.Log($"I AM {gameObject.name}, I INFORMED THAT ELEVATOR IS AT {floorNumber}");
         if (floorNumber == targetFloorNumber && currentState == EPassengerMoveState.RIDING_ELEVATOR)
         {
             currentFloor = floor;
@@ -87,7 +86,7 @@ public class Passenger : MonoBehaviour
             transform.SetParent(currentFloor.transform);
 
             currentState = EPassengerMoveState.EXITING_ELEVATOR;
-            elevator.ReleasePassenger(this);
+ 
         }
     }
 
@@ -126,7 +125,7 @@ public class Passenger : MonoBehaviour
 
                 if (Vector2.Distance(target, transform.position) <= arriveDistance)
                 {
-                    Debug.Log("QUEUEING");
+                    // Debug.Log(gameobject.name + "QUEUEING " );
                     currentState = EPassengerMoveState.WAITING_IN_QUEUE;
                     currentFloor.GetInQueue(this);
                 }
@@ -152,6 +151,7 @@ public class Passenger : MonoBehaviour
                 break;            
             case EPassengerMoveState.EXITING_ELEVATOR:
                 target = currentFloor.GetElevatorDoor().position;
+                elevator.PassengerGettingOut(this);
                 if (target != Vector2.zero)
                 {
                     MoveTowards(target);
@@ -160,15 +160,16 @@ public class Passenger : MonoBehaviour
                 {
                     currentState = EPassengerMoveState.WALKING_TO_EXIT;
                     OnPassengerExitElevator?.Invoke(this);
+                    Debug.Log("passenger exit elevator invoked by "+this.gameObject.name);
                 }
                 break;
 
             case EPassengerMoveState.WALKING_TO_EXIT:
                 target = currentFloor.GetEntranceDoor().position;
+                
                 MoveTowards(target);
                 if (Vector2.Distance(target, transform.position) <= arriveDistance)
                 {
-                    Debug.Log("************passenger arrived successfully");
                     Destroy(gameObject);
                 }
                 break;
@@ -210,7 +211,7 @@ public class Passenger : MonoBehaviour
         if (currentState != EPassengerMoveState.WAITING_IN_QUEUE)
             return;
 
-        Debug.Log($"{gameObject.name}: going elevator");
+        // Debug.Log($"{gameObject.name}: going elevator");
         target = elevatorSpot.position;
         currentState = EPassengerMoveState.WALKING_TO_ELEVATOR;
     }

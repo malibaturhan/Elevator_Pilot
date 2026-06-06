@@ -89,6 +89,7 @@ public class Floor : MonoBehaviour
             return null;
         }
         Passenger passengerToRideElevator =  PassengerQueue.Dequeue();
+        passengersOnTheFloorCount--;
         return passengerToRideElevator;
     }
 
@@ -97,7 +98,7 @@ public class Floor : MonoBehaviour
         Vector2 getInQueuePosition = new Vector2(
             (elevatorDoor.position.x - distanceBetweenQueuedPassenger * PassengerQueue.Count),
             elevatorDoor.position.y);
-        Debug.Log("Get In Queue Pos: " +getInQueuePosition.ToString());
+        // Debug.Log("Get In Queue Pos: " +getInQueuePosition.ToString());
         return getInQueuePosition;
     }
 }
