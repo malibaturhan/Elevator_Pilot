@@ -80,13 +80,16 @@ public class Elevator : MonoBehaviour
         if (PassengersGettingInside.Contains(passengerRiding))
         {
             PassengersGettingInside.Remove(passengerRiding);
+        }
+
+        if (!PassengersInsideElevator.Contains(passengerRiding))
+        {
             PassengersInsideElevator.Add(passengerRiding);
             passengersInsideElevatorCount++;
         }
-        ReconsiderCanMove();
-        
-    }
 
+        ReconsiderCanMove();
+    }
     private void PassengerGettingOffElevatorCallback(Passenger passengerGettingOff)
     {
         if (PassengersGoingFloor.Contains(passengerGettingOff))
@@ -184,7 +187,6 @@ public class Elevator : MonoBehaviour
         if (passengerToGetInside != null)
         {
             canMove = false;
-            Debug.Log("passengers inside elevator count: " +passengersInsideElevatorCount);
             passengerToGetInside.GetInsideElevator(elevatorSlots[passengersInsideElevatorCount]);
             PassengersGettingInside.Add(passengerToGetInside);
         }
@@ -225,6 +227,9 @@ public class Elevator : MonoBehaviour
 
     public void PassengerGettingOut(Passenger passenger)
     {
+        if (PassengersGoingFloor.Contains(passenger))
+            return;
+
         Debug.Log("getting out: " + passenger.gameObject.name);
         PassengersGoingFloor.Add(passenger);
     }

@@ -26,12 +26,15 @@ public class Passenger : MonoBehaviour
     private Elevator elevator;
     private Floor currentFloor;
     private Vector2 target;
-    
+
     [Header("Runtime Data")]
     private int currentFloorIndex;
     private int targetFloorNumber;
     private Vector2 queuePosition;
     private EPassengerMoveState currentState;
+
+    // İlk state girişinde enum default değerinden dolayı ChangeState'in return etmesini engeller.
+    private bool hasStateInitialized = false;
 
     [Header("Actions / Events")]
     public static Action<Passenger> OnPassengerEnteredElevator;
@@ -41,8 +44,8 @@ public class Passenger : MonoBehaviour
     {
         elevator = FindFirstObjectByType<Elevator>();
         gameObject.name = "Passenger_" + Random.Range(1, 999999);
+
         InitPassenger();
-        target = Vector2.zero;
     }
 
     private void OnEnable()
@@ -56,44 +59,7 @@ public class Passenger : MonoBehaviour
     {
         Elevator.OnElevatorArrived -= ElevatorArrivedOnFloorCallback;
         OnPassengerEnteredElevator -= PassengerGotInsideElevatorCallback;
-        OnPassengerExitElevator    -= PassengerGotOffElevatorCallback;
-    }
-
-    private void PassengerGotInsideElevatorCallback(Passenger passengerMoved)
-    {
-        if (passengerMoved != this && passengerMoved.currentFloor ==  currentFloor) // if a passenger in this floor moved than requeue as visual
-        {
-            if (currentState == EPassengerMoveState.WAITING_IN_QUEUE)
-            {
-                target = currentFloor.GetQueuePosition();
-            }
-        }
-    }
-
-    private void PassengerGotOffElevatorCallback(Passenger obj)
-    {
-        //no op
-    }
-
-    private void ElevatorArrivedOnFloorCallback(Floor floor)
-    {
-        int floorNumber = floor.FloorNumber;
-        if (floorNumber == targetFloorNumber && currentState == EPassengerMoveState.RIDING_ELEVATOR)
-        {
-            currentFloor = floor;
-            currentFloorIndex = floor.FloorNumber;
-
-            transform.SetParent(currentFloor.transform);
-
-            currentState = EPassengerMoveState.EXITING_ELEVATOR;
- 
-        }
-    }
-
-    public void SetPassengerOnFloor(Floor floor, int floorIndex)
-    {
-        currentFloor = floor;
-        currentFloorIndex = floorIndex;
+        OnPassengerExitElevator -= PassengerGotOffElevatorCallback;
     }
 
     private void InitPassenger()
@@ -103,9 +69,17 @@ public class Passenger : MonoBehaviour
             Debug.LogError($"{name}: currentFloor atanmamış. Passenger spawn edilirken SetPassengerOnFloor çağrılmalı.");
             return;
         }
+
         DetermineFloorToGo();
 
-        currentState = EPassengerMoveState.WALKING_TO_QUEUE;
+        // İlk hedef burada atanır. 0,0'a gitme problemini çözen kısım burası.
+        ChangeState(EPassengerMoveState.WALKING_TO_QUEUE);
+    }
+
+    public void SetPassengerOnFloor(Floor floor, int floorIndex)
+    {
+        currentFloor = floor;
+        currentFloorIndex = floorIndex;
     }
 
     private void Update()
@@ -113,78 +87,156 @@ public class Passenger : MonoBehaviour
         ApplyState();
     }
 
-    private void ApplyState()
+    private void ChangeState(EPassengerMoveState newState)
     {
-        switch (currentState)
+        // Aynı state'e tekrar girmeyi engeller.
+        // Ama ilk girişte bu kontrol çalışmaz; çünkü hasStateInitialized false.
+        if (hasStateInitialized && currentState == newState)
+            return;
+
+        currentState = newState;
+        hasStateInitialized = true;
+
+        switch (newState)
         {
             case EPassengerMoveState.WALKING_TO_QUEUE:
-                if (target == Vector2.zero)
-                {
-                    target = currentFloor.GetQueuePosition();
-                }
-
-                if (Vector2.Distance(target, transform.position) <= arriveDistance)
-                {
-                    // Debug.Log(gameobject.name + "QUEUEING " );
-                    currentState = EPassengerMoveState.WAITING_IN_QUEUE;
-                    currentFloor.GetInQueue(this);
-                }
-                MoveTowards(target);
+                target = currentFloor.GetQueuePosition();
                 break;
 
             case EPassengerMoveState.WAITING_IN_QUEUE:
-                // Burada hiçbir şey yapmaz.
-                // Floor uygun zamanda GetInsideElevator() çağırır.
+                currentFloor.GetInQueue(this);
                 break;
 
             case EPassengerMoveState.WALKING_TO_ELEVATOR:
-                MoveTowards(target);
-                if (Vector2.Distance(target, transform.position) <= arriveDistance)
-                {
-                    currentState = EPassengerMoveState.RIDING_ELEVATOR;
-                }
+                // Target, GetInsideElevator içinde elevator slot olarak atanıyor.
                 break;
 
             case EPassengerMoveState.RIDING_ELEVATOR:
                 transform.SetParent(elevator.transform);
                 OnPassengerEnteredElevator?.Invoke(this);
-                break;            
+                break;
+
             case EPassengerMoveState.EXITING_ELEVATOR:
+                transform.SetParent(currentFloor.transform);
+
+                // Yolcu artık hedef kattaki elevator door'a yürür.
                 target = currentFloor.GetElevatorDoor().position;
+
+                // Eskiden her frame çağrılıyordu.
+                // Artık sadece EXITING_ELEVATOR state'ine girince 1 kere çağrılır.
                 elevator.PassengerGettingOut(this);
-                if (target != Vector2.zero)
-                {
-                    MoveTowards(target);
-                }
-                if (Vector2.Distance(target, transform.position) <= arriveDistance)
-                {
-                    currentState = EPassengerMoveState.WALKING_TO_EXIT;
-                    OnPassengerExitElevator?.Invoke(this);
-                    Debug.Log("passenger exit elevator invoked by "+this.gameObject.name);
-                }
                 break;
 
             case EPassengerMoveState.WALKING_TO_EXIT:
+                // Eskiden çıkış event'i ApplyState içinde tekrar riskiyle çalışıyordu.
+                // Artık bu state'e geçince 1 kere çalışır.
+                OnPassengerExitElevator?.Invoke(this);
+
                 target = currentFloor.GetEntranceDoor().position;
-                
-                MoveTowards(target);
-                if (Vector2.Distance(target, transform.position) <= arriveDistance)
-                {
-                    Destroy(gameObject);
-                }
                 break;
         }
     }
-    
+
+    private void ApplyState()
+    {
+        switch (currentState)
+        {
+            case EPassengerMoveState.WALKING_TO_QUEUE:
+                MoveTowards(target);
+
+                if (HasArrived(target))
+                {
+                    ChangeState(EPassengerMoveState.WAITING_IN_QUEUE);
+                }
+
+                break;
+
+            case EPassengerMoveState.WAITING_IN_QUEUE:
+                // Floor uygun zamanda GetInsideElevator çağırır.
+                break;
+
+            case EPassengerMoveState.WALKING_TO_ELEVATOR:
+                MoveTowards(target);
+
+                if (HasArrived(target))
+                {
+                    ChangeState(EPassengerMoveState.RIDING_ELEVATOR);
+                }
+
+                break;
+
+            case EPassengerMoveState.RIDING_ELEVATOR:
+                // Yolcu asansörde bekler.
+                // Parent değiştirme ve event invoke ChangeState içinde 1 kere yapıldı.
+                break;
+
+            case EPassengerMoveState.EXITING_ELEVATOR:
+                MoveTowards(target);
+
+                if (HasArrived(target))
+                {
+                    ChangeState(EPassengerMoveState.WALKING_TO_EXIT);
+                }
+
+                break;
+
+            case EPassengerMoveState.WALKING_TO_EXIT:
+                MoveTowards(target);
+
+                if (HasArrived(target))
+                {
+                    Destroy(gameObject);
+                }
+
+                break;
+        }
+    }
+
     private bool MoveTowards(Vector2 targetPosition)
     {
-        if (Vector2.Distance(transform.position, targetPosition) <= arriveDistance)
+        if (HasArrived(targetPosition))
             return true;
 
         Vector2 direction = (targetPosition - (Vector2)transform.position).normalized;
         transform.Translate(direction * walkSpeed * Time.deltaTime);
 
         return false;
+    }
+
+    private bool HasArrived(Vector2 targetPosition)
+    {
+        return Vector2.Distance(transform.position, targetPosition) <= arriveDistance;
+    }
+
+    private void ElevatorArrivedOnFloorCallback(Floor floor)
+    {
+        int floorNumber = floor.FloorNumber;
+
+        if (floorNumber == targetFloorNumber && currentState == EPassengerMoveState.RIDING_ELEVATOR)
+        {
+            // En önemli kısım:
+            // Yolcunun currentFloor'u artık geldiği eski kat değil, vardığı yeni kat olur.
+            currentFloor = floor;
+            currentFloorIndex = floor.FloorNumber;
+
+            ChangeState(EPassengerMoveState.EXITING_ELEVATOR);
+        }
+    }
+
+    private void PassengerGotInsideElevatorCallback(Passenger passengerMoved)
+    {
+        if (passengerMoved != this && passengerMoved.currentFloor == currentFloor)
+        {
+            if (currentState == EPassengerMoveState.WAITING_IN_QUEUE)
+            {
+                target = currentFloor.GetQueuePosition();
+            }
+        }
+    }
+
+    private void PassengerGotOffElevatorCallback(Passenger passenger)
+    {
+        // no op
     }
 
     private void DetermineFloorToGo()
@@ -205,14 +257,12 @@ public class Passenger : MonoBehaviour
         neededFloorText.text = targetFloorNumber.ToString();
     }
 
-
     public void GetInsideElevator(Transform elevatorSpot)
     {
         if (currentState != EPassengerMoveState.WAITING_IN_QUEUE)
             return;
 
-        // Debug.Log($"{gameObject.name}: going elevator");
         target = elevatorSpot.position;
-        currentState = EPassengerMoveState.WALKING_TO_ELEVATOR;
+        ChangeState(EPassengerMoveState.WALKING_TO_ELEVATOR);
     }
 }
