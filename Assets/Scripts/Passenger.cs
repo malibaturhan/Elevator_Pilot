@@ -32,6 +32,7 @@ public class Passenger : MonoBehaviour
     private Floor targetFloor;
     private Vector2 queuePosition;
     private EPassengerMoveState currentState;
+    private int initialFloorNumber;
 
     // İlk state girişinde enum default değerinden dolayı ChangeState'in return etmesini engeller.
     private bool hasStateInitialized = false;
@@ -251,6 +252,7 @@ public class Passenger : MonoBehaviour
         }
         
         targetFloor = FloorManager.Instance.GetFloorByStoreyAndSide(floorNumberToGo, goingLeft ? EFloorSide.LEFT : EFloorSide.RIGHT);
+        initialFloorNumber = targetFloor.FloorNumber;
         UpdatePassengerUI();
     }
 
@@ -267,4 +269,7 @@ public class Passenger : MonoBehaviour
         target = elevatorSpot.position;
         ChangeState(EPassengerMoveState.WALKING_TO_ELEVATOR);
     }
+
+    public int TargetFloorCount => targetFloor.FloorNumber;
+    public int InitialFloorCount => initialFloorNumber;
 }

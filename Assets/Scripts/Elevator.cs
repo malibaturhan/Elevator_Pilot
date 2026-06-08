@@ -31,8 +31,8 @@ public class Elevator : MonoBehaviour
     private Floor leftCurrentFloor;
 
     private Floor rightCurrentFloor;
-    private int currentFloorIndex = 0;
-    private int targetFloorIndex = 0;
+    private int currentFloorIndex = 1;
+    private int targetFloorIndex = 1;
     private int passengersInsideElevatorCount = 0;
     private int topFloorIndex;
     private int bottomFloor;
@@ -58,6 +58,7 @@ public class Elevator : MonoBehaviour
 
     void Start()
     {
+        ChangeTargetFloor(-1);
         maxPassengers = elevatorSlots.Count;
         PassengersInsideElevator = new List<Passenger>(maxPassengers);
         SetMinMaxFloor();
