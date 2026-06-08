@@ -28,7 +28,9 @@ public class Elevator : MonoBehaviour
     private Rigidbody2D rb;
 
     [Header("Runtime")]
-    private Floor currentFloor;
+    private Floor leftCurrentFloor;
+
+    private Floor rightCurrentFloor;
     private int currentFloorIndex = 0;
     private int targetFloorIndex = 0;
     private int passengersInsideElevatorCount = 0;
@@ -42,6 +44,7 @@ public class Elevator : MonoBehaviour
 
     [Header("Events")]
     public static Action<Floor> OnElevatorArrived;
+
     public static Action<Floor> OnTargetFloorChanged;
 
     [Header("UI References")]
@@ -90,6 +93,7 @@ public class Elevator : MonoBehaviour
 
         ReconsiderCanMove();
     }
+
     private void PassengerGettingOffElevatorCallback(Passenger passengerGettingOff)
     {
         if (PassengersGoingFloor.Contains(passengerGettingOff))
@@ -97,11 +101,10 @@ public class Elevator : MonoBehaviour
             PassengersGoingFloor.Remove(passengerGettingOff);
             PassengersInsideElevator.Remove(passengerGettingOff);
             passengersInsideElevatorCount--;
-            Debug.Log("passenger inside elevator reduced to " + passengersInsideElevatorCount);
+            // Debug.Log("passenger inside elevator reduced to " + passengersInsideElevatorCount);
         }
 
         ReconsiderCanMove();
-       
     }
 
     private void ReconsiderCanMove()
@@ -115,6 +118,7 @@ public class Elevator : MonoBehaviour
     private void SetMinMaxFloor()
     {
         topFloorIndex = FloorManager.Instance.TopFloorIndex;
+        Debug.Log("top floor index: " + topFloorIndex);
         bottomFloor = FloorManager.Instance.BottomFloorIndex;
     }
 
@@ -145,7 +149,7 @@ public class Elevator : MonoBehaviour
                 // Debug.Log("ELEVATOR INVOKED ARRIVAL AT " +  floorGotInto.FloorNumber);
                 arrivalLatestInvokedFloor = floorGotInto;
             }
-            
+
             movementStatus = EElevatorMoveStatus.ON_FLOOR;
         }
     }
@@ -166,10 +170,11 @@ public class Elevator : MonoBehaviour
         OnTargetFloorChanged?.Invoke(FloorManager.Instance.GetFloorByStoreyAndSide(targetFloorIndex, EFloorSide.LEFT));
     }
 
-    // UI Button controls
-    public void RequestPassengerFromFloor()
+    public void RequestPassengerFromLeft() => RequestPassengerFromFloor(EFloorSide.LEFT);
+    public void RequestPassengerFromRight() => RequestPassengerFromFloor(EFloorSide.RIGHT);
+
+    private void RequestPassengerFromFloor(EFloorSide side)
     {
-        Debug.Log("psgr inside : "+PassengersInsideElevator.Count +" max psgr: " +maxPassengers);
         if (PassengersInsideElevator.Count == maxPassengers)
         {
             Debug.Log("Elevator is full");
@@ -182,7 +187,15 @@ public class Elevator : MonoBehaviour
             return;
         }
 
-        Passenger passengerToGetInside = currentFloor.GetPassenger();
+        Passenger passengerToGetInside = null;
+        if (side == EFloorSide.LEFT)
+        {
+            passengerToGetInside = leftCurrentFloor.GetPassenger();
+        }
+        else if (side == EFloorSide.RIGHT)
+        {
+            passengerToGetInside = rightCurrentFloor.GetPassenger();
+        }
 
         if (passengerToGetInside != null)
         {
@@ -201,36 +214,50 @@ public class Elevator : MonoBehaviour
             return;
         }
 
-        // no need to control if currentfloor is null since physics interaction prevented
-        currentFloor = elevatorPoint.GetCurrentFloor();
-        currentFloorIndex = elevatorPoint.GetThisFloorNumber();
+        int arrivedFloorNumber = elevatorPoint.GetThisFloorNumber();
+
+        currentFloorIndex = arrivedFloorNumber;
+
+        leftCurrentFloor = FloorManager.Instance.GetFloorByStoreyAndSide(
+            arrivedFloorNumber,
+            EFloorSide.LEFT
+        );
+
+        rightCurrentFloor = FloorManager.Instance.GetFloorByStoreyAndSide(
+            arrivedFloorNumber,
+            EFloorSide.RIGHT
+        );
+        //
+        // Debug.Log("Arrived floor index: " + currentFloorIndex);
+        // Debug.Log("leftCurrentFloor: " + leftCurrentFloor.name);
+        // Debug.Log("rightCurrentFloor: " + rightCurrentFloor.name);
+
         UpdateUI();
     }
-
 
     private void OnTriggerExit2D(Collider2D other)
     {
         if (other.CompareTag("ElevatorPoint"))
         {
-            currentFloor = null;
+            leftCurrentFloor = null;
         }
     }
 
     public bool Arrived => movementStatus == EElevatorMoveStatus.ON_FLOOR;
-    public Floor CurrentFloor => currentFloor;
+    public Floor LeftCurrentFloor => leftCurrentFloor;
 
     private void UpdateUI()
     {
         currentFloorText.text = $"Current: {currentFloorIndex}";
     }
-    
+
 
     public void PassengerGettingOut(Passenger passenger)
     {
         if (PassengersGoingFloor.Contains(passenger))
             return;
 
-        Debug.Log("getting out: " + passenger.gameObject.name);
+        // Debug.Log("getting out: " + passenger.gameObject.name);
         PassengersGoingFloor.Add(passenger);
     }
 }

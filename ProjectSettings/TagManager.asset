@@ -57,5 +57,8 @@ TagManager:
   - name: Passenger
     uniqueID: 670756097
     locked: 0
+  - name: Texts
+    uniqueID: 112377511
+    locked: 0
   m_RenderingLayers:
   - Default

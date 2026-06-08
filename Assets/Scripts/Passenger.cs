@@ -16,7 +16,7 @@ public enum EPassengerMoveState
 public class Passenger : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private TextMeshPro neededFloorText;
+    [SerializeField] private TextMeshPro wantedFloorText;
 
     [Header("Settings")]
     [SerializeField] private float walkSpeed = 3f;
@@ -29,7 +29,7 @@ public class Passenger : MonoBehaviour
 
     [Header("Runtime Data")]
     private int currentFloorIndex;
-    private int targetFloorNumber;
+    private Floor targetFloor;
     private Vector2 queuePosition;
     private EPassengerMoveState currentState;
 
@@ -71,8 +71,7 @@ public class Passenger : MonoBehaviour
         }
 
         DetermineFloorToGo();
-
-        // İlk hedef burada atanır. 0,0'a gitme problemini çözen kısım burası.
+        
         ChangeState(EPassengerMoveState.WALKING_TO_QUEUE);
     }
 
@@ -108,7 +107,6 @@ public class Passenger : MonoBehaviour
                 break;
 
             case EPassengerMoveState.WALKING_TO_ELEVATOR:
-                // Target, GetInsideElevator içinde elevator slot olarak atanıyor.
                 break;
 
             case EPassengerMoveState.RIDING_ELEVATOR:
@@ -118,20 +116,12 @@ public class Passenger : MonoBehaviour
 
             case EPassengerMoveState.EXITING_ELEVATOR:
                 transform.SetParent(currentFloor.transform);
-
-                // Yolcu artık hedef kattaki elevator door'a yürür.
                 target = currentFloor.GetElevatorDoor().position;
-
-                // Eskiden her frame çağrılıyordu.
-                // Artık sadece EXITING_ELEVATOR state'ine girince 1 kere çağrılır.
                 elevator.PassengerGettingOut(this);
                 break;
 
             case EPassengerMoveState.WALKING_TO_EXIT:
-                // Eskiden çıkış event'i ApplyState içinde tekrar riskiyle çalışıyordu.
-                // Artık bu state'e geçince 1 kere çalışır.
                 OnPassengerExitElevator?.Invoke(this);
-
                 target = currentFloor.GetEntranceDoor().position;
                 break;
         }
@@ -152,7 +142,6 @@ public class Passenger : MonoBehaviour
                 break;
 
             case EPassengerMoveState.WAITING_IN_QUEUE:
-                // Floor uygun zamanda GetInsideElevator çağırır.
                 break;
 
             case EPassengerMoveState.WALKING_TO_ELEVATOR:
@@ -166,8 +155,6 @@ public class Passenger : MonoBehaviour
                 break;
 
             case EPassengerMoveState.RIDING_ELEVATOR:
-                // Yolcu asansörde bekler.
-                // Parent değiştirme ve event invoke ChangeState içinde 1 kere yapıldı.
                 break;
 
             case EPassengerMoveState.EXITING_ELEVATOR:
@@ -212,12 +199,10 @@ public class Passenger : MonoBehaviour
     {
         int floorNumber = floor.FloorNumber;
 
-        if (floorNumber == targetFloorNumber && currentState == EPassengerMoveState.RIDING_ELEVATOR)
+        if (floorNumber == targetFloor.FloorNumber && currentState == EPassengerMoveState.RIDING_ELEVATOR)
         {
-            // En önemli kısım:
-            // Yolcunun currentFloor'u artık geldiği eski kat değil, vardığı yeni kat olur.
-            currentFloor = floor;
-            currentFloorIndex = floor.FloorNumber;
+            currentFloor = targetFloor;
+            currentFloorIndex = currentFloor.FloorNumber;
 
             ChangeState(EPassengerMoveState.EXITING_ELEVATOR);
         }
@@ -241,20 +226,37 @@ public class Passenger : MonoBehaviour
 
     private void DetermineFloorToGo()
     {
-        targetFloorNumber = Random.Range(0, FloorManager.Instance.FloorCount);
-
-        if (targetFloorNumber == currentFloorIndex)
+        bool isAtTopFloor = FloorManager.Instance.TopFloorIndex == currentFloor.FloorNumber;
+        bool isAtBottomFloor = FloorManager.Instance.BottomFloorIndex == currentFloor.FloorNumber;
+        bool goingUp = Random.Range(0, 2) == 0;
+        if (isAtBottomFloor)
         {
-            DetermineFloorToGo();
-            return;
+            goingUp = true;
         }
+        else if (isAtTopFloor)
+        {
+            goingUp = false;
+        }
+        bool goingLeft = Random.Range(0, 2) == 0;
+        
 
+        int floorNumberToGo = 0;
+        if (goingUp)
+        {
+            floorNumberToGo = Random.Range(currentFloor.FloorNumber + 1, FloorManager.Instance.TopFloorIndex + 1);
+        }
+        else
+        {
+            floorNumberToGo = Random.Range(FloorManager.Instance.BottomFloorIndex, currentFloor.FloorNumber);
+        }
+        
+        targetFloor = FloorManager.Instance.GetFloorByStoreyAndSide(floorNumberToGo, goingLeft ? EFloorSide.LEFT : EFloorSide.RIGHT);
         UpdatePassengerUI();
     }
 
     private void UpdatePassengerUI()
     {
-        neededFloorText.text = targetFloorNumber.ToString();
+        wantedFloorText.text = targetFloor.ToString();
     }
 
     public void GetInsideElevator(Transform elevatorSpot)

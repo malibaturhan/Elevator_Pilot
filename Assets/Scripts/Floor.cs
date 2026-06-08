@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -5,17 +6,20 @@ using Random = UnityEngine.Random;
 
 public class Floor : MonoBehaviour
 {
+    private float floorHeight = 0;
+    
     [Header("References")]
     private BoxCollider2D entranceTrigger;
-
     private TextMeshPro floorText;
+    [SerializeField] private SpriteRenderer floorSpriteRenderer;
     [SerializeField] private Passenger PassengerPrefab;
-    [SerializeField] private Transform entranceDoor;
-    [SerializeField] private Transform elevatorDoor;
-
+    [SerializeField] private Transform leftSideDoorTransform;
+    [SerializeField] private Transform rightSideDoorTransform;    
+    [SerializeField] private ElevatorPoint leftElevatorPoint;
+    [SerializeField] private ElevatorPoint rightElevatorPoint;
+    
     [Header("Floor Attributes")]
     [SerializeField] private int floorNumber = 0;
-
     private EFloorSide currentSide;
 
     [Header("Floor Settings")]
@@ -29,14 +33,24 @@ public class Floor : MonoBehaviour
     private float passengerSpawnTimer;
     private int passengersOnTheFloorCount;
     private Queue<Passenger> PassengerQueue;
+    private Transform entranceDoor;
+    private Transform elevatorDoor;
+
+    void Awake()
+    {
+        
+    }
+
+
 
     void Start()
     {
+        gameObject.name = $"Floor {floorNumber} {currentSide}";
         floorText = GetComponentInChildren<TextMeshPro>();
         floorText.text = floorNumber.ToString();
-        currentSide = EFloorSide.LEFT; // FOR NOW ALL OF THEM ARE IN LEFT BANK
         ResetPassengerSpawnTimer();
         PassengerQueue = new Queue<Passenger>();
+        
     }
 
     // Update is called once per frame
@@ -50,6 +64,7 @@ public class Floor : MonoBehaviour
                 SpawnPassenger();
             }
         }
+        
     }
 
     #region Spawn Passengers
@@ -100,5 +115,46 @@ public class Floor : MonoBehaviour
             elevatorDoor.position.y);
         // Debug.Log("Get In Queue Pos: " +getInQueuePosition.ToString());
         return getInQueuePosition;
+    }
+
+    public float Height
+    {
+        get
+        {
+            if (floorSpriteRenderer == null)
+            {
+                Debug.LogError($"{name}: floorSpriteRenderer atanmamış.");
+                return 0f;
+            }
+
+            return floorSpriteRenderer.bounds.size.y;
+        }
+    }
+    public void SetInitialValues(int floorNumber, EFloorSide floorSide = EFloorSide.LEFT)
+    {
+        this.floorNumber = floorNumber;
+        currentSide = floorSide;
+        SetElementsAccordingToSide();
+    }
+    private void SetElementsAccordingToSide()
+    {
+        if (currentSide == EFloorSide.LEFT)
+        {
+            entranceDoor = leftSideDoorTransform;
+            elevatorDoor = rightSideDoorTransform;
+            leftElevatorPoint.enabled = false;
+        }   
+        else if (currentSide == EFloorSide.RIGHT)
+        {
+            entranceDoor = rightSideDoorTransform;
+            elevatorDoor = leftSideDoorTransform;
+            rightElevatorPoint.enabled = false;
+        }
+    }
+
+    public override string ToString()
+    {
+        string sideStr = currentSide == EFloorSide.LEFT ? "L" : "R";
+        return $"{floorNumber} {sideStr}";
     }
 }
