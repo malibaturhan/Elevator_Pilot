@@ -43,12 +43,20 @@ public class PassengerPatience : MonoBehaviour
     {
         Passenger.OnPassengerWaitingElevator += PassengerWaitingElevatorCallback;
         Passenger.OnPassengerExitElevator += PassengerExitElevatorCallback;
+        UpgradeManager.OnPassengerPatienceUpgraded += PatienceUpgradeCallback;
     }
 
     private void OnDisable()
     {
         Passenger.OnPassengerWaitingElevator -= PassengerWaitingElevatorCallback;
         Passenger.OnPassengerExitElevator -= PassengerExitElevatorCallback;
+        UpgradeManager.OnPassengerPatienceUpgraded -= PatienceUpgradeCallback;
+    }
+
+    private void PatienceUpgradeCallback(float obj)
+    {
+        maxPatience += obj;
+        currentPatience = maxPatience;
     }
 
     public void Init(Passenger passenger)

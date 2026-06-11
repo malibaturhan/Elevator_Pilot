@@ -6272,17 +6272,17 @@ MonoBehaviour:
   passengerSlotUpgradeButtonText: {fileID: 2129629144}
   passengerPatienceUpgradeButtonText: {fileID: 31212552}
   profitUpgradeButtonText: {fileID: 1798126635}
-  ignoreMoneyCostForNow: 1
-  speedUpgradeBasePrice: 25
+  ignoreMoneyCostForNow: 0
+  speedUpgradeBasePrice: 5
   speedUpgradePriceIncreasePercent: 0.35
   speedUpgradeAmount: 0.15
-  passengerSlotUpgradeBasePrice: 60
+  passengerSlotUpgradeBasePrice: 15
   passengerSlotUpgradePriceIncreasePercent: 0.55
   passengerSlotUpgradeAmount: 1
-  patienceUpgradeBasePrice: 40
+  patienceUpgradeBasePrice: 25
   patienceUpgradePriceIncreasePercent: 0.4
   patienceUpgradeAmount: 0.15
-  profitUpgradeBasePrice: 35
+  profitUpgradeBasePrice: 50
   profitUpgradePriceIncreasePercent: 0.45
   profitUpgradeAmount: 0.2
 --- !u!1 &1736583748
