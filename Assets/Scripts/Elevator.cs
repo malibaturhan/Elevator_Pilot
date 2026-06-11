@@ -13,23 +13,21 @@ public class Elevator : MonoBehaviour
 {
     [Header("Passenger Transport Settings")]
     [SerializeField] private List<Transform> elevatorSlots = new List<Transform>();
-
     private List<Passenger> PassengersInsideElevator = new List<Passenger>();
     private List<Passenger> PassengersGettingInside = new List<Passenger>();
     private List<Passenger> PassengersGoingFloor = new List<Passenger>();
     [SerializeField] private int maxPassengers;
+    private int possibleMaxPassengers;
 
     [Header("Movement Settings")]
     [SerializeField] private float movementSpeed = 1.0f;
 
     [Header("References")]
     private BoxCollider2D col;
-
     private Rigidbody2D rb;
 
     [Header("Runtime")]
     private Floor leftCurrentFloor;
-
     private Floor rightCurrentFloor;
     private int currentFloorIndex = 1;
     private int targetFloorIndex = 1;
@@ -44,8 +42,8 @@ public class Elevator : MonoBehaviour
 
     [Header("Events")]
     public static Action<Floor> OnElevatorArrived;
-
     public static Action<Floor> OnTargetFloorChanged;
+    public static Action OnImpossibleButtonPressed;
 
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI currentFloorText;
@@ -58,25 +56,56 @@ public class Elevator : MonoBehaviour
 
     void Start()
     {
-        ChangeTargetFloor(-1);
-        maxPassengers = elevatorSlots.Count;
-        PassengersInsideElevator = new List<Passenger>(maxPassengers);
-        SetMinMaxFloor();
-        movementStatus = EElevatorMoveStatus.ON_FLOOR;
+        possibleMaxPassengers = elevatorSlots.Count;
+        PassengersInsideElevator = new List<Passenger>(possibleMaxPassengers);
+
         col = gameObject.GetComponent<BoxCollider2D>();
         rb = gameObject.GetComponent<Rigidbody2D>();
+
+        SetMinMaxFloor();
+
+        currentFloorIndex = bottomFloor;
+        targetFloorIndex = bottomFloor;
+
+        movementStatus = EElevatorMoveStatus.ON_FLOOR;
+        ChangeTargetFloor(1);
+
+        leftCurrentFloor = FloorManager.Instance.GetFloorByStoreyAndSide(currentFloorIndex, EFloorSide.LEFT);
+        rightCurrentFloor = FloorManager.Instance.GetFloorByStoreyAndSide(currentFloorIndex, EFloorSide.RIGHT);
+
+        OnTargetFloorChanged?.Invoke(leftCurrentFloor);
+
+        UpdateUI();
     }
 
     private void OnEnable()
     {
         Passenger.OnPassengerEnteredElevator += PassengerGettingInsideElevatorCallback;
         Passenger.OnPassengerExitElevator += PassengerGettingOffElevatorCallback;
+        UpgradeManager.OnElevatorSlotUpgraded += ElevatorSlotUpgradeCallback;
+        UpgradeManager.OnElevatorSpeedUpgraded += ElevatorSpeedUpgradeCallback;
     }
 
     private void OnDisable()
     {
         Passenger.OnPassengerEnteredElevator -= PassengerGettingInsideElevatorCallback;
         Passenger.OnPassengerExitElevator -= PassengerGettingOffElevatorCallback;
+        UpgradeManager.OnElevatorSlotUpgraded  -= ElevatorSlotUpgradeCallback;
+        UpgradeManager.OnElevatorSpeedUpgraded -= ElevatorSpeedUpgradeCallback;
+    }
+
+    private void ElevatorSpeedUpgradeCallback(float increase)
+    {
+        movementSpeed += increase;
+    }
+
+    private void ElevatorSlotUpgradeCallback(int increase)
+    {
+        if (maxPassengers < possibleMaxPassengers) maxPassengers++;
+        if (maxPassengers == possibleMaxPassengers)
+        {
+            UpgradeManager.Instance.DeactivateUpgrade(EUpgradeType.ELEVATOR_SLOT);
+        }
     }
 
     private void PassengerGettingInsideElevatorCallback(Passenger passengerRiding)
@@ -95,7 +124,7 @@ public class Elevator : MonoBehaviour
         ReconsiderCanMove();
     }
 
-    private void PassengerGettingOffElevatorCallback(Passenger passengerGettingOff)
+    private void PassengerGettingOffElevatorCallback(Passenger passengerGettingOff, Floor  initialFloor, Floor targetFloor, float satisfactionRatio)
     {
         if (PassengersGoingFloor.Contains(passengerGettingOff))
         {
@@ -126,6 +155,28 @@ public class Elevator : MonoBehaviour
     void Update()
     {
         Move();
+        GetKeyboardInput();
+    }
+
+    private void GetKeyboardInput()
+    {
+        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            ChangeTargetFloor(1);
+        }
+        else if (Input.GetKeyDown(KeyCode.S)|| Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            ChangeTargetFloor(-1);
+        }
+
+        if (Input.GetKeyDown(KeyCode.A)|| Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            RequestPassengerFromLeft();
+        }
+        else if (Input.GetKeyDown(KeyCode.D)|| Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            RequestPassengerFromRight();
+        }
     }
 
     private void Move()
@@ -154,11 +205,15 @@ public class Elevator : MonoBehaviour
             movementStatus = EElevatorMoveStatus.ON_FLOOR;
         }
     }
+    
 
     // UI Button controls
     public void ChangeTargetFloor(int floorAddition)
     {
+        SetMinMaxFloor();
+
         targetFloorIndex += floorAddition;
+
         if (targetFloorIndex > topFloorIndex)
         {
             targetFloorIndex = topFloorIndex;
@@ -168,9 +223,14 @@ public class Elevator : MonoBehaviour
             targetFloorIndex = bottomFloor;
         }
 
-        OnTargetFloorChanged?.Invoke(FloorManager.Instance.GetFloorByStoreyAndSide(targetFloorIndex, EFloorSide.LEFT));
-    }
+        Floor targetLeftFloor = FloorManager.Instance.GetFloorByStoreyAndSide(targetFloorIndex, EFloorSide.LEFT);
 
+        if (targetLeftFloor != null)
+        {
+            OnTargetFloorChanged?.Invoke(targetLeftFloor);
+        }
+    }
+    
     public void RequestPassengerFromLeft() => RequestPassengerFromFloor(EFloorSide.LEFT);
     public void RequestPassengerFromRight() => RequestPassengerFromFloor(EFloorSide.RIGHT);
 
@@ -178,6 +238,7 @@ public class Elevator : MonoBehaviour
     {
         if (PassengersInsideElevator.Count == maxPassengers)
         {
+            OnImpossibleButtonPressed?.Invoke();
             Debug.Log("Elevator is full");
             return;
         }
@@ -188,15 +249,15 @@ public class Elevator : MonoBehaviour
             return;
         }
 
-        Passenger passengerToGetInside = null;
-        if (side == EFloorSide.LEFT)
+        Floor floorToRequest = side == EFloorSide.LEFT ? leftCurrentFloor : rightCurrentFloor;
+
+        if (floorToRequest == null)
         {
-            passengerToGetInside = leftCurrentFloor.GetPassenger();
+            Debug.LogWarning($"No current floor found for side: {side}");
+            return;
         }
-        else if (side == EFloorSide.RIGHT)
-        {
-            passengerToGetInside = rightCurrentFloor.GetPassenger();
-        }
+
+        Passenger passengerToGetInside = floorToRequest.GetPassenger();
 
         if (passengerToGetInside != null)
         {
@@ -205,7 +266,6 @@ public class Elevator : MonoBehaviour
             PassengersGettingInside.Add(passengerToGetInside);
         }
     }
-
 
     private void OnTriggerEnter2D(Collider2D collider)
     {
@@ -241,9 +301,18 @@ public class Elevator : MonoBehaviour
         if (other.CompareTag("ElevatorPoint"))
         {
             leftCurrentFloor = null;
+            rightCurrentFloor = null;
         }
     }
 
+    public void IncreaseElevatorSpeed(float increaseAmount)
+    {
+        movementSpeed += increaseAmount;
+        StatUIManager.Instance.UpdateElevatorSpeed(movementSpeed);
+    }
+    
+    public float ElevatorSpeed => movementSpeed;
+    
     public bool Arrived => movementStatus == EElevatorMoveStatus.ON_FLOOR;
     public Floor LeftCurrentFloor => leftCurrentFloor;
 

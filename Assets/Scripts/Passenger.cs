@@ -26,9 +26,11 @@ public class Passenger : MonoBehaviour
     private Elevator elevator;
     private Floor currentFloor;
     private Vector2 target;
+    private PassengerPatience patience;
 
     [Header("Runtime Data")]
     private int currentFloorIndex;
+    private Floor initialFloor;
     private Floor targetFloor;
     private Vector2 queuePosition;
     private EPassengerMoveState currentState;
@@ -39,7 +41,8 @@ public class Passenger : MonoBehaviour
 
     [Header("Actions / Events")]
     public static Action<Passenger> OnPassengerEnteredElevator;
-    public static Action<Passenger> OnPassengerExitElevator;
+    public static Action<Passenger, Floor, Floor, float> OnPassengerExitElevator; // current floor, target floor, satisfaction ratio - to make calculations
+    public static Action<Passenger> OnPassengerWaitingElevator;
 
     private void Start()
     {
@@ -62,6 +65,8 @@ public class Passenger : MonoBehaviour
         OnPassengerEnteredElevator -= PassengerGotInsideElevatorCallback;
         OnPassengerExitElevator -= PassengerGotOffElevatorCallback;
     }
+    
+    public void SetInitialFloor(Floor floor) => initialFloor = floor;
 
     private void InitPassenger()
     {
@@ -72,7 +77,13 @@ public class Passenger : MonoBehaviour
         }
 
         DetermineFloorToGo();
-        
+
+        patience = GetComponent<PassengerPatience>();
+        if (patience != null)
+        {
+            patience.Init(this);
+        }
+
         ChangeState(EPassengerMoveState.WALKING_TO_QUEUE);
     }
 
@@ -89,8 +100,6 @@ public class Passenger : MonoBehaviour
 
     private void ChangeState(EPassengerMoveState newState)
     {
-        // Aynı state'e tekrar girmeyi engeller.
-        // Ama ilk girişte bu kontrol çalışmaz; çünkü hasStateInitialized false.
         if (hasStateInitialized && currentState == newState)
             return;
 
@@ -104,6 +113,7 @@ public class Passenger : MonoBehaviour
                 break;
 
             case EPassengerMoveState.WAITING_IN_QUEUE:
+                OnPassengerWaitingElevator?.Invoke(this);
                 currentFloor.GetInQueue(this);
                 break;
 
@@ -122,7 +132,7 @@ public class Passenger : MonoBehaviour
                 break;
 
             case EPassengerMoveState.WALKING_TO_EXIT:
-                OnPassengerExitElevator?.Invoke(this);
+                OnPassengerExitElevator?.Invoke(this, initialFloor, targetFloor, patience.SatisfactionRatio);
                 target = currentFloor.GetEntranceDoor().position;
                 break;
         }
@@ -220,7 +230,7 @@ public class Passenger : MonoBehaviour
         }
     }
 
-    private void PassengerGotOffElevatorCallback(Passenger passenger)
+    private void PassengerGotOffElevatorCallback(Passenger passenger, Floor currentFloor, Floor targetFloor, float satisfactionRatio)
     {
         // no op
     }
@@ -252,7 +262,7 @@ public class Passenger : MonoBehaviour
         }
         
         targetFloor = FloorManager.Instance.GetFloorByStoreyAndSide(floorNumberToGo, goingLeft ? EFloorSide.LEFT : EFloorSide.RIGHT);
-        initialFloorNumber = targetFloor.FloorNumber;
+        initialFloorNumber = currentFloor.FloorNumber;
         UpdatePassengerUI();
     }
 

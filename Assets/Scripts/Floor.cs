@@ -71,8 +71,10 @@ public class Floor : MonoBehaviour
 
     private void SpawnPassenger()
     {
-        var passenger = Instantiate(PassengerPrefab, entranceDoor.position, Quaternion.identity);
-        passenger.SetPassengerOnFloor(this, floorNumber);
+        var passengerInstance = Instantiate(PassengerPrefab, entranceDoor.position, Quaternion.identity);
+        Passenger passenger = passengerInstance.GetComponent<Passenger>();
+        passenger.SetInitialFloor(this);
+        passengerInstance.SetPassengerOnFloor(this, floorNumber);
         passengersOnTheFloorCount++;
         ResetPassengerSpawnTimer();
     }
@@ -151,6 +153,8 @@ public class Floor : MonoBehaviour
             rightElevatorPoint.enabled = false;
         }
     }
+    
+    public EFloorSide Side => currentSide;
 
     public override string ToString()
     {
