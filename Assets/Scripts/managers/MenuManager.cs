@@ -51,11 +51,13 @@ public class MenuManager : Singleton<MenuManager>
         {
             OnPauseMenuToggle?.Invoke(false);
             pauseMenu.SetActive(false);
+            Debug.Log("CLOSE PAUSE MENU");
         }
         else
         {
             OnPauseMenuToggle?.Invoke(true);
             pauseMenu.SetActive(true);
+            Debug.Log("OPEN PAUSE MENU");
         }
     }
 
