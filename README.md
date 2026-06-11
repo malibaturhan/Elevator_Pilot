@@ -68,9 +68,7 @@ Tracks the overall performance of the player based on passenger satisfaction.
 
 - Unity 6
 - C#
-- Unity 2D Physics
 - TextMeshPro
-- Unity UI
 
 ---
 
